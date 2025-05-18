@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCNA 200-301 Practice Exam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="questions.js"></script>
+    <style>
+      body {
+        font-family: "Inter", "Arial", sans-serif;
+        background: linear-gradient(135deg, #1e3a8a 0%, #6b7280 100%);
+        background-image: url("https://images.unsplash.com/photo-1620121692029-d088224ddc74?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 1rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .hidden {
+        display: none;
+      }
+      .option-label {
+        cursor: pointer;
+        padding: 0.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s;
+      }
+      .option-label:hover {
+        background-color: #f7fafc;
+      }
+      .option-label input:checked + span {
+        font-weight: bold;
+        color: #1e40af;
+      }
+      .question-nav-button {
+        width: 2.5rem;
+        height: 2.5rem;
+        margin: 0.25rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s, transform 0.2s;
+      }
+      .question-nav-button.current {
+        background-color: #1e40af;
+        color: white;
+        font-weight: bold;
+      }
+      .question-nav-button.answered {
+        background-color: #10b981;
+        color: white;
+      }
+      .question-nav-button:hover {
+        background-color: #93c5fd;
+        transform: scale(1.05);
+      }
+      .review-block.correct:nth-child(odd) {
+        background-color: #f7fafc;
+      }
+      .review-block.correct:nth-child(even) {
+        background-color: #edf2f7;
+      }
+      .review-block.incorrect {
+        background-color: #fee2e2;
+      }
+      button:hover {
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container p-6 w-full max-w-3xl">
+      <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">
+        CCNA 200-301 Practice Exam
+      </h1>
+
+      <!-- Start Screen -->
+      <div id="start-screen">
+        <p
+          class="text-lg font-semibold mb-2 text-gray-700"
+          id="total-available"
+        >
+          Total Questions Available: 0
+        </p>
+        <h2 class="text-lg font-semibold mb-2 text-gray-700">
+          Select Question Mode
+        </h2>
+        <div class="mb-4">
+          <label class="inline-flex items-center mr-4">
+            <input
+              type="radio"
+              name="question-mode"
+              value="total"
+              class="mr-2 text-blue-600"
+              checked
+            />
+            <span class="text-gray-600">Total Questions (Randomized)</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input
+              type="radio"
+              name="question-mode"
+              value="category"
+              class="mr-2 text-blue-600"
+            />
+            <span class="text-gray-600">By Category</span>
+          </label>
+        </div>
+        <div id="total-questions-input" class="mb-4">
+          <label for="num-questions" class="block mb-1 text-gray-600"
+            >Number of Questions:</label
+          >
+          <input
+            type="number"
+            id="num-questions"
+            min="1"
+            max="0"
+            value="10"
+            class="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div id="category-inputs" class="space-y-2 mb-4 hidden">
+          <!-- Dynamically populated by JavaScript -->
+        </div>
+        <div class="mb-4">
+          <label class="inline-flex items-center">
+            <input type="checkbox" id="use-timer" class="mr-2 text-blue-600" />
+            <span class="text-gray-600">Use Timer (1.2 min per question)</span>
+          </label>
+        </div>
+        <button
+          id="start-quiz"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full transition duration-200"
+        >
+          Start Quiz
+        </button>
+      </div>
+
+      <!-- Quiz Screen -->
+      <div id="quiz-screen" class="hidden">
+        <div id="timer" class="text-lg font-semibold mb-4 text-gray-700"></div>
+        <div id="progress" class="mb-4 font-semibold text-gray-700"></div>
+        <div id="question-nav" class="flex flex-wrap mb-4"></div>
+        <div id="question" class="mb-4 text-lg text-gray-800"></div>
+        <div id="options" class="mb-4"></div>
+        <div class="flex space-x-4">
+          <button
+            id="prev-question"
+            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
+          >
+            Previous
+          </button>
+          <button
+            id="next-question"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-200"
+          >
+            Next
+          </button>
+          <button
+            id="submit-quiz"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition duration-200"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Screen -->
+      <div id="results-screen" class="hidden">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Results</h2>
+        <div id="score" class="mb-6 text-lg font-semibold text-gray-700"></div>
+        <div id="review" class="space-y-4"></div>
+        <button
+          id="restart-quiz"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full mt-6 transition duration-200"
+        >
+          Restart Quiz
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const quizData = questions; // Loaded from questions.js
+      let currentQuiz = [];
+      let currentQuestionIndex = 0;
+      let score = 0;
+      let userAnswers = [];
+      let timeLeft = 0;
+      let timerInterval;
+
+      // Categories and question counts
+      const categories = [
+        "Network Fundamentals",
+        "Network Access",
+        "IP Connectivity",
+        "IP Services",
+        "Security Fundamentals",
+        "Automation and Programmability",
+      ];
+
+      // Calculate available questions per category
+      function getCategoryCounts() {
+        const counts = {};
+        categories.forEach((category) => {
+          counts[category] = quizData.filter(
+            (q) => q.category === category
+          ).length;
+        });
+        return counts;
+      }
+
+      // Populate category inputs
+      function populateCategoryInputs() {
+        const counts = getCategoryCounts();
+        const inputsDiv = document.getElementById("category-inputs");
+        inputsDiv.innerHTML = "";
+        categories.forEach((category) => {
+          const div = document.createElement("div");
+          div.innerHTML = `
+                    <label for="num-${category.replace(
+                      /\s+/g,
+                      "-"
+                    )}" class="block mb-1 text-gray-600">
+                        ${category} (${counts[category]} available):
+                    </label>
+                    <input
+                        type="number"
+                        id="num-${category.replace(/\s+/g, "-")}"
+                        min="0"
+                        max="${counts[category]}"
+                        value="0"
+                        class="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400"
+                    />
+                `;
+          inputsDiv.appendChild(div);
+        });
+      }
+
+      // Initialize start screen
+      function initializeStartScreen() {
+        // Update total available questions
+        const totalAvailable = quizData.length;
+        document.getElementById(
+          "total-available"
+        ).textContent = `Total Questions Available: ${totalAvailable}`;
+        document
+          .getElementById("num-questions")
+          .setAttribute("max", totalAvailable);
+        populateCategoryInputs();
+
+        // Toggle input visibility based on mode
+        const modeRadios = document.getElementsByName("question-mode");
+        const totalInput = document.getElementById("total-questions-input");
+        const categoryInput = document.getElementById("category-inputs");
+        modeRadios.forEach((radio) => {
+          radio.addEventListener("change", () => {
+            totalInput.classList.toggle("hidden", radio.value !== "total");
+            categoryInput.classList.toggle(
+              "hidden",
+              radio.value !== "category"
+            );
+          });
+        });
+      }
+
+      // Initialize on page load
+      initializeStartScreen();
+
+      // Shuffle array
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      // Start quiz
+      document.getElementById("start-quiz").addEventListener("click", () => {
+        const mode = document.querySelector(
+          'input[name="question-mode"]:checked'
+        ).value;
+        let totalQuestions = 0;
+
+        if (mode === "total") {
+          // Total Questions Mode
+          const numQuestions =
+            parseInt(document.getElementById("num-questions").value) || 0;
+          if (numQuestions < 1 || numQuestions > quizData.length) {
+            alert(`Please enter a number between 1 and ${quizData.length}.`);
+            return;
+          }
+          totalQuestions = numQuestions;
+          currentQuiz = shuffle([...quizData]).slice(0, numQuestions);
+        } else {
+          // Category Mode
+          const counts = getCategoryCounts();
+          const requestedCounts = {};
+          categories.forEach((category) => {
+            const input = document.getElementById(
+              `num-${category.replace(/\s+/g, "-")}`
+            );
+            const num = parseInt(input.value) || 0;
+            requestedCounts[category] = num;
+            totalQuestions += num;
+          });
+
+          if (totalQuestions < 1) {
+            alert("Please select at least one question.");
+            return;
+          }
+          for (const category of categories) {
+            if (requestedCounts[category] > counts[category]) {
+              alert(
+                `Cannot select more than ${counts[category]} questions for ${category}.`
+              );
+              return;
+            }
+          }
+
+          currentQuiz = [];
+          categories.forEach((category) => {
+            const categoryQuestions = shuffle(
+              quizData.filter((q) => q.category === category)
+            );
+            currentQuiz.push(
+              ...categoryQuestions.slice(0, requestedCounts[category])
+            );
+          });
+          currentQuiz = shuffle(currentQuiz); // Final shuffle
+        }
+
+        const useTimer = document.getElementById("use-timer").checked;
+
+        // Calculate timer (1.2 minutes per question)
+        timeLeft = useTimer ? totalQuestions * 1.2 * 60 : 0;
+
+        currentQuestionIndex = 0;
+        score = 0;
+        userAnswers = new Array(totalQuestions).fill(null);
+
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("quiz-screen").classList.remove("hidden");
+        displayQuestion();
+        updateNavigationPanel();
+
+        if (useTimer) {
+          startTimer();
+        }
+      });
+
+      // Display question
+      function displayQuestion() {
+        const question = currentQuiz[currentQuestionIndex];
+        document.getElementById("progress").textContent = `Question ${
+          currentQuestionIndex + 1
+        } of ${currentQuiz.length}`;
+        document.getElementById("question").textContent = question.question;
+
+        const optionsDiv = document.getElementById("options");
+        optionsDiv.innerHTML = "";
+        question.options.forEach((option, index) => {
+          const optionId = `option-${index}`;
+          const inputType = question.type === "multiple" ? "checkbox" : "radio";
+          const label = document.createElement("label");
+          label.className = "option-label flex items-center";
+          label.innerHTML = `
+                    <input type="${inputType}" name="option" value="${index}" class="mr-2 text-blue-600" ${
+            userAnswers[currentQuestionIndex]?.includes(index) ? "checked" : ""
+          }>
+                    <span>${option}</span>
+                `;
+          optionsDiv.appendChild(label);
+        });
+
+        document.getElementById("prev-question").disabled =
+          currentQuestionIndex === 0;
+        document.getElementById("next-question").disabled =
+          currentQuestionIndex === currentQuiz.length - 1;
+        updateNavigationPanel();
+      }
+
+      // Update navigation panel
+      function updateNavigationPanel() {
+        const navDiv = document.getElementById("question-nav");
+        navDiv.innerHTML = "";
+        currentQuiz.forEach((_, index) => {
+          const button = document.createElement("button");
+          button.textContent = index + 1;
+          button.className = `question-nav-button border ${
+            index === currentQuestionIndex
+              ? "current"
+              : userAnswers[index]
+              ? "answered"
+              : "bg-gray-200"
+          }`;
+          button.addEventListener("click", () => {
+            saveAnswer();
+            currentQuestionIndex = index;
+            displayQuestion();
+          });
+          navDiv.appendChild(button);
+        });
+      }
+
+      // Timer
+      function startTimer() {
+        const timerDiv = document.getElementById("timer");
+        timerInterval = setInterval(() => {
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            submitQuiz();
+            return;
+          }
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          timerDiv.textContent = `Time Left: ${minutes}:${seconds
+            .toString()
+            .padStart(2, "0")}`;
+          timeLeft--;
+        }, 1000);
+      }
+
+      // Previous question
+      document.getElementById("prev-question").addEventListener("click", () => {
+        if (currentQuestionIndex > 0) {
+          saveAnswer();
+          currentQuestionIndex--;
+          displayQuestion();
+        }
+      });
+
+      // Next question
+      document.getElementById("next-question").addEventListener("click", () => {
+        if (currentQuestionIndex < currentQuiz.length - 1) {
+          saveAnswer();
+          currentQuestionIndex++;
+          displayQuestion();
+        }
+      });
+
+      // Submit quiz
+      document
+        .getElementById("submit-quiz")
+        .addEventListener("click", submitQuiz);
+
+      function saveAnswer() {
+        const selectedOptions = Array.from(
+          document.querySelectorAll('input[name="option"]:checked')
+        ).map((input) => parseInt(input.value));
+        userAnswers[currentQuestionIndex] =
+          selectedOptions.length > 0 ? selectedOptions : null;
+      }
+
+      function submitQuiz() {
+        saveAnswer();
+        clearInterval(timerInterval);
+        document.getElementById("quiz-screen").classList.add("hidden");
+        document.getElementById("results-screen").classList.remove("hidden");
+
+        score = 0;
+        let reviewHtml = "";
+        currentQuiz.forEach((question, index) => {
+          const userAnswer = userAnswers[index] || [];
+          const isCorrect =
+            question.type === "multiple"
+              ? JSON.stringify(userAnswer.sort()) ===
+                JSON.stringify(question.correctAnswer.sort())
+              : userAnswer[0] === question.correctAnswer;
+          if (isCorrect) score++;
+
+          // Format user answers with color coding for multiple-choice
+          let userAnswerText = "None";
+          if (userAnswer.length > 0) {
+            if (question.type === "multiple") {
+              userAnswerText = userAnswer
+                .map((i) => {
+                  const isCorrectOption = question.correctAnswer.includes(i);
+                  return `<span class="${
+                    isCorrectOption ? "text-green-600" : "text-red-600"
+                  }">${question.options[i]}</span>`;
+                })
+                .join(", ");
+            } else {
+              userAnswerText = `<span class="${
+                isCorrect ? "text-green-600" : "text-red-600"
+              }">${question.options[userAnswer[0]]}</span>`;
+            }
+          } else {
+            userAnswerText = `<span class="text-red-600">None</span>`;
+          }
+
+          // Format correct answers in green
+          const correctAnswerText =
+            question.type === "multiple"
+              ? question.correctAnswer
+                  .map(
+                    (i) =>
+                      `<span class="text-green-600">${question.options[i]}</span>`
+                  )
+                  .join(", ")
+              : `<span class="text-green-600">${
+                  question.options[question.correctAnswer]
+                }</span>`;
+
+          reviewHtml += `
+                    <div class="review-block ${
+                      isCorrect ? "correct" : "incorrect"
+                    } p-4 rounded-lg border shadow-sm">
+                        <p class="text-lg font-semibold text-gray-800">Question ${
+                          index + 1
+                        }: ${question.question}</p>
+                        <p class="text-gray-700"><strong>Your Answer:</strong> ${userAnswerText}</p>
+                        <p class="text-gray-700"><strong>Correct Answer:</strong> ${correctAnswerText}</p>
+                        <p class="text-gray-600"><strong>Explanation:</strong> ${
+                          question.explanation
+                        }</p>
+                    </div>
+                `;
+        });
+
+        document.getElementById(
+          "score"
+        ).textContent = `Score: ${score} out of ${currentQuiz.length} (${(
+          (score / currentQuiz.length) *
+          100
+        ).toFixed(2)}%)`;
+        document.getElementById("review").innerHTML = reviewHtml;
+      }
+
+      // Restart quiz
+      document.getElementById("restart-quiz").addEventListener("click", () => {
+        document.getElementById("results-screen").classList.add("hidden");
+        document.getElementById("start-screen").classList.remove("hidden");
+        document.getElementById("timer").textContent = "";
+        initializeStartScreen(); // Refresh inputs
+      });
+    </script>
+  </body>
+</html>
